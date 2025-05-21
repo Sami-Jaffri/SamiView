@@ -1,0 +1,2 @@
+# SamiView
+Stock Market Analyzer

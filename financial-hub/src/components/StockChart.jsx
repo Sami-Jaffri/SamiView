@@ -69,12 +69,10 @@ const StockChart = ({ symbol = "AAPL" }) => {
   }, [symbol]);
 
   return (
-    <div>
-      <h2>{symbol} Stock Chart</h2>
-      {loading ? <p>Loading chart...</p> :
-        <Line data={chartData} options={{ responsive: true, plugins: { legend: { position: 'top' } } }} />
-      }
-    </div>
+<div style={{ maxWidth: "100%", background: "#1e1e1e", padding: "1rem", borderRadius: "8px" }}>
+  <Line data={chartData} options={{ responsive: true, plugins: { legend: { position: 'top' } } }} />
+</div>
+
   );
 };
 

@@ -4,75 +4,101 @@ import NewsDrawer from './components/NewsDrawer';
 
 export default function App() {
   const [ticker, setTicker] = useState('AAPL');
+  const [input, setInput]   = useState('AAPL');
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSubmit = e => {
-    e.preventDefault();
-    const input = e.target.elements.ticker.value.trim().toUpperCase();
-    if (input) setTicker(input);
+  const loadChart = () => {
+    const sym = input.trim().toUpperCase();
+    if (sym) setTicker(sym);
   };
 
   return (
     <div style={{
-      padding: '2rem',
-      fontFamily: 'Inter, sans-serif',
-      background: '#0e1117',
+      fontFamily: 'system-ui, sans-serif',
+      background: '#0f0f0f',
       color: '#e1e1e1',
       minHeight: '100vh',
-      position: 'relative',
-      overflow: isOpen ? 'hidden' : 'auto'
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '2rem 1rem',
+      boxSizing: 'border-box'
     }}>
-      <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>📈 SamiView</h1>
+      {/* Title */}
+      <h1 style={{
+        margin: 0,
+        fontSize: '2.5rem',
+        textAlign: 'center'
+      }}>
+        SamiView
+      </h1>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
+      {/* Controls */}
+      <div style={{
+        display: 'flex',
+        gap: '1rem',
+        margin: '1.5rem 0'
+      }}>
         <input
-          name="ticker"
-          placeholder="TSLA, MSFT…"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="TSLA, MSFT …"
           style={{
-            flex: 1,
-            padding: '0.6rem',
+            padding: '0.5rem',
             fontSize: '1rem',
-            background: '#1e1e1e',
+            background: '#0f0f0f',
             color: '#fff',
-            border: '1px solid #444',
-            borderRadius: '5px',
+            border: '1px solid #fff',
+            borderRadius: '4px',
+            width: '140px',
+            textAlign: 'center'
           }}
         />
+
         <button
-          type="submit"
+          onClick={loadChart}
           style={{
-            padding: '0.6rem 1rem',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
+            padding: '0.5rem 1rem',
+            background: '#0f0f0f',
+            color: '#fff',
+            border: '1px solid #fff',
+            borderRadius: '4px',
+            fontSize: '1rem',
             cursor: 'pointer'
           }}
         >
-          Load Chart
+          Load
         </button>
+
         <button
-          type="button"
           onClick={() => setIsOpen(true)}
           style={{
-            padding: '0.6rem 1rem',
-            background: '#e11d48',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
+            padding: '0.5rem 1rem',
+            background: '#0f0f0f',
+            color: '#fff',
+            border: '1px solid #fff',
+            borderRadius: '4px',
+            fontSize: '1rem',
             cursor: 'pointer'
           }}
         >
-          News ↪
+          News
         </button>
-      </form>
-
-      <div style={{ display: 'flex', gap: '2rem' }}>
-        <div style={{ flex: 3 }}>
-          <StockChart symbol={ticker} />
-        </div>
       </div>
 
+      {/* Main chart area */}
+      <main style={{
+        width: '100%',
+        maxWidth: '1000px',
+        flexGrow: 1,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <StockChart symbol={ticker} />
+      </main>
+
+      {/* News Drawer */}
       <NewsDrawer
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}

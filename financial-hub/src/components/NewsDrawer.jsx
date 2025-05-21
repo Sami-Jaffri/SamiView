@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StockNews from './StockNews';
 
-const drawerVariants = {
+const variants = {
   hidden: { x: '100%' },
   visible: { x: 0 },
   exit:    { x: '100%' }
@@ -13,40 +13,53 @@ export default function NewsDrawer({ isOpen, onClose, symbol }) {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          variants={drawerVariants}
+          variants={variants}
           initial="hidden"
           animate="visible"
           exit="exit"
-          transition={{ type: 'tween', duration: 0.3 }}
+          transition={{ type: 'tween', duration: 0.25 }}
           style={{
             position: 'fixed',
             top: 0,
             right: 0,
-            width: '320px',
+            width: '300px',
             height: '100vh',
-            background: '#0e1117',
-            padding: '2rem 1.5rem',
-            boxShadow: '-2px 0 8px rgba(0,0,0,0.6)',
+            background: '#111',
+            boxShadow: '-3px 0 8px rgba(0,0,0,0.6)',
+            padding: '1rem',
+            overflowY: 'auto',
             zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
-          <button
-            onClick={onClose}
-            style={{
-              position: 'absolute',
-              top: '1rem',
-              right: '1rem',
-              background: 'transparent',
-              border: 'none',
-              fontSize: '1.5rem',
-              color: '#e1e1e1',
-              cursor: 'pointer'
-            }}
-          >
-            ×
-          </button>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem'
+          }}>
+            <h2 style={{
+              margin: 0,
+              fontSize: '1.25rem',
+              color: '#e1e1e1'
+            }}>
+              News – {symbol}
+            </h2>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '1.25rem',
+                color: '#e1e1e1',
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </button>
+          </div>
 
-          <h2 style={{ color: '#e1e1e1', marginBottom: '1rem' }}>📰 News: {symbol}</h2>
           <StockNews symbol={symbol} />
         </motion.div>
       )}

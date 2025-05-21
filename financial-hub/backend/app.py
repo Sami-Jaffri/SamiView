@@ -1,20 +1,20 @@
+import os
 import yfinance as yf
+import requests
+import pandas as pd
 from flask import Flask, jsonify
 from flask_cors import CORS
-from datetime import date, timedelta
-import requests
-import logging
-import os
 from dotenv import load_dotenv
+from datetime import date, timedelta
+from sklearn.linear_model import LogisticRegression
+import logging
 
-# Set up logging
+# ─── Setup ─────────────────────────────────────────────────────────────────────
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# 1. Load your .env
-load_dotenv()  
-
-# 2. Read the key into a module-level constant
+load_dotenv()
 API_KEY = os.getenv("FINNHUB_API_KEY")
 if not API_KEY:
     raise RuntimeError("Missing FINNHUB_API_KEY in .env")
@@ -22,12 +22,12 @@ if not API_KEY:
 app = Flask(__name__)
 CORS(app)
 
+# ─── Candle Proxy ───────────────────────────────────────────────────────────────
+
 @app.route("/api/candle/<symbol>")
 def get_candle(symbol):
     try:
         logger.debug(f"Fetching data for symbol: {symbol}")
-        
-        # 1) Download last 30 days of daily data
         df = yf.download(
             symbol,
             period="1mo",
@@ -35,51 +35,106 @@ def get_candle(symbol):
             progress=False,
             auto_adjust=True
         )
-        
         logger.debug(f"Downloaded data shape: {df.shape}")
         logger.debug(f"Columns available: {df.columns.tolist()}")
 
-        # 2) Check if we got any data
         if df.empty:
-            logger.warning(f"No data available for {symbol}")
             return jsonify({"error": f"No data available for {symbol}"}), 400
 
-        # 3) Forward-fill any missing values
         df = df.ffill()
-        
-        # 4) Build UNIX timestamp list and closing-price list
         timestamps = [int(ts.timestamp()) for ts in df.index]
-        closes = [x[0] for x in df["Close"].values.tolist()] # Changed from "Adj Close" to "Close"
-        
-        logger.debug(f"Generated {len(timestamps)} data points")
-        
-        return jsonify({
-            "t": timestamps,
-            "c": closes
-        })
+        # Flatten exactly as you did before:
+        closes = [x[0] for x in df["Close"].values.tolist()]
+
+        return jsonify({"t": timestamps, "c": closes})
+
     except Exception as e:
-        logger.error(f"Error processing {symbol}: {str(e)}", exc_info=True)
-        return jsonify({"error": f"Error processing {symbol}: {str(e)}"}), 500
+        logger.error(f"Error in get_candle for {symbol}: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+# ─── News Proxy ─────────────────────────────────────────────────────────────────
 
 @app.route("/api/news/<symbol>")
 def get_news(symbol):
-    # fetch the last week of news
     today    = date.today()
     week_ago = today - timedelta(days=7)
     resp = requests.get(
         "https://finnhub.io/api/v1/company-news",
         params={
-          "symbol": symbol,
-          "from": week_ago.isoformat(),
-          "to": today.isoformat(),
-          "token": API_KEY
+            "symbol": symbol,
+            "from": week_ago.isoformat(),
+            "to": today.isoformat(),
+            "token": API_KEY
         }
     )
     articles = resp.json()
-    # optionally trim to top 5
-    top5 = articles[:5] if isinstance(articles, list) else []
-    return jsonify(top5)
+    return jsonify(articles[:5] if isinstance(articles, list) else [])
+
+# ─── ML Prediction ───────────────────────────────────────────────────────────────
+
+@app.route("/api/predict/<symbol>")
+def predict_trend(symbol):
+    try:
+        # 1) Download 1 year of data (adjusted)
+        df = yf.download(
+            symbol,
+            period="1y",
+            interval="1d",
+            progress=False,
+            auto_adjust=True
+        )
+
+        logger.debug(f"Predict: downloaded {df.shape} for {symbol}")
+        if df.empty:
+            return jsonify({"error": f"No data for {symbol}"}), 400
+
+        # 2) Forward fill
+        df = df.ffill()
+
+        # 3) Flatten close just like get_candle
+        closes = [x[0] for x in df["Close"].values.tolist()]
+        # build a fresh DataFrame so rolling works predictably
+        data = pd.DataFrame({"Close": closes}, index=df.index)
+
+        # 4) Feature engineering
+        data["ma5"]  = data["Close"].rolling(5).mean()
+        data["ma20"] = data["Close"].rolling(20).mean()
+        data = data.dropna(subset=["ma5", "ma20"])
+
+        # 5) Label: next-day return > 0
+        data["ret_next"] = data["Close"].pct_change().shift(-1)
+        data = data.dropna(subset=["ret_next"])
+        data["up"] = (data["ret_next"] > 0).astype(int)
+
+        # 6) Prepare X, y
+        X = (data["ma5"] - data["ma20"]).values.reshape(-1, 1)
+        y = data["up"].values
+        if len(X) < 50:
+            return jsonify({"error": "Not enough data to train"}), 400
+
+        # 7) Train on all but last, predict last
+        X_train, y_train = X[:-1], y[:-1]
+        X_last           = X[-1].reshape(1, -1)
+
+        model = LogisticRegression()
+        model.fit(X_train, y_train)
+
+        pred = model.predict(X_last)[0]
+        prob = model.predict_proba(X_last)[0, pred]
+        trend = "Up" if pred == 1 else "Down"
+
+        return jsonify({
+            "trend":      trend,
+            "confidence": round(float(prob), 2),
+            "feature":    round(float(X_last[0][0]), 4)
+        })
+
+    except Exception as e:
+        logger.error(f"Error in predict_trend for {symbol}: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+# ─── Run Server ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    logger.info("Starting Flask server...")
+    logger.info("Starting Flask server on port 5000…")
     app.run(port=5000, debug=True)

@@ -1,13 +1,25 @@
 
+
 import React, { useState } from 'react';
 import StockChart from './components/StockChart';
 import StockNews from './components/StockNews';
 
 function App() {
+  const [ticker, setTicker] = useState("AAPL");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const input = e.target.elements.ticker.value.trim().toUpperCase();
+    if (input) {
+      setTicker(input);
+    }
+  };
+
   return (
     <div style={{ padding: "2rem", fontFamily: "Inter, sans-serif", backgroundColor: "#0e1117", color: "#e1e1e1", minHeight: "100vh" }}>
       <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>📈 SamiView</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: "2rem" }}>
+
         <input
           type="text"
           name="ticker"
@@ -27,7 +39,6 @@ function App() {
           Load Chart
         </button>
       </form>
-
       <div style={{ display: "flex", gap: "2rem", alignItems: "flex-start" }}>
         <div style={{ flex: 3 }}>
           <StockChart symbol={ticker} />
@@ -37,7 +48,7 @@ function App() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

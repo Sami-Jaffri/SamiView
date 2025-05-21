@@ -9,8 +9,6 @@ from datetime import date, timedelta
 from sklearn.linear_model import LogisticRegression
 import logging
 
-# ─── Setup ─────────────────────────────────────────────────────────────────────
-
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -22,7 +20,6 @@ if not API_KEY:
 app = Flask(__name__)
 CORS(app)
 
-# ─── Candle Proxy ───────────────────────────────────────────────────────────────
 
 @app.route("/api/candle/<symbol>")
 def get_candle(symbol):
@@ -43,7 +40,6 @@ def get_candle(symbol):
 
         df = df.ffill()
         timestamps = [int(ts.timestamp()) for ts in df.index]
-        # Flatten exactly as you did before:
         closes = [x[0] for x in df["Close"].values.tolist()]
 
         return jsonify({"t": timestamps, "c": closes})
@@ -52,7 +48,6 @@ def get_candle(symbol):
         logger.error(f"Error in get_candle for {symbol}: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-# ─── News Proxy ─────────────────────────────────────────────────────────────────
 
 @app.route("/api/news/<symbol>")
 def get_news(symbol):
@@ -70,7 +65,6 @@ def get_news(symbol):
     articles = resp.json()
     return jsonify(articles[:5] if isinstance(articles, list) else [])
 
-# ─── ML Prediction ───────────────────────────────────────────────────────────────
 
 @app.route("/api/predict/<symbol>")
 def predict_trend(symbol):
@@ -88,31 +82,24 @@ def predict_trend(symbol):
         if df.empty:
             return jsonify({"error": f"No data for {symbol}"}), 400
 
-        # 2) Forward fill
         df = df.ffill()
 
-        # 3) Flatten close just like get_candle
         closes = [x[0] for x in df["Close"].values.tolist()]
-        # build a fresh DataFrame so rolling works predictably
         data = pd.DataFrame({"Close": closes}, index=df.index)
 
-        # 4) Feature engineering
         data["ma5"]  = data["Close"].rolling(5).mean()
         data["ma20"] = data["Close"].rolling(20).mean()
         data = data.dropna(subset=["ma5", "ma20"])
 
-        # 5) Label: next-day return > 0
         data["ret_next"] = data["Close"].pct_change().shift(-1)
         data = data.dropna(subset=["ret_next"])
         data["up"] = (data["ret_next"] > 0).astype(int)
 
-        # 6) Prepare X, y
         X = (data["ma5"] - data["ma20"]).values.reshape(-1, 1)
         y = data["up"].values
         if len(X) < 50:
             return jsonify({"error": "Not enough data to train"}), 400
 
-        # 7) Train on all but last, predict last
         X_train, y_train = X[:-1], y[:-1]
         X_last           = X[-1].reshape(1, -1)
 
@@ -133,7 +120,6 @@ def predict_trend(symbol):
         logger.error(f"Error in predict_trend for {symbol}: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-# ─── Run Server ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     logger.info("Starting Flask server on port 5000…")

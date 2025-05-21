@@ -24,7 +24,6 @@ export default function App() {
       padding: '2rem 1rem',
       boxSizing: 'border-box'
     }}>
-      {/* Title */}
       <h1 style={{
         margin: 0,
         fontSize: '2.5rem',
@@ -33,7 +32,6 @@ export default function App() {
         SamiView
       </h1>
 
-      {/* Controls */}
       <div style={{
         display: 'flex',
         gap: '1rem',
@@ -86,7 +84,6 @@ export default function App() {
         </button>
       </div>
 
-      {/* Main chart area */}
       <main style={{
         width: '100%',
         maxWidth: '1000px',
@@ -98,7 +95,6 @@ export default function App() {
         <StockChart symbol={ticker} />
       </main>
 
-      {/* News Drawer */}
       <NewsDrawer
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}

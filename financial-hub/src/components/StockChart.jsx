@@ -1,5 +1,3 @@
-// src/components/StockChart.jsx
-
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Line } from 'react-chartjs-2';
@@ -23,17 +21,14 @@ ChartJS.register(
 );
 
 export default function StockChart({ symbol = "AAPL" }) {
-  // Chart state
   const [chartData, setChartData] = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
-  // Prediction state
   const [pred,     setPred]     = useState(null);
   const [predLoading, setPredLoading] = useState(false);
   const [predError,   setPredError]   = useState(null);
 
-  // Fetch chart data
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -62,7 +57,6 @@ export default function StockChart({ symbol = "AAPL" }) {
       .finally(() => setLoading(false));
   }, [symbol]);
 
-  // Fetch prediction once symbol (and chart) changes
   useEffect(() => {
     setPredLoading(true);
     setPredError(null);
@@ -88,7 +82,6 @@ export default function StockChart({ symbol = "AAPL" }) {
       display: 'flex',
       flexDirection: 'column'
     }}>
-      {/* Chart */}
       <div style={{ flexGrow: 1 }}>
         {loading ? (
           <p style={{ color: '#888' }}>Loading chart…</p>
@@ -123,7 +116,6 @@ export default function StockChart({ symbol = "AAPL" }) {
         )}
       </div>
 
-      {/* Prediction */}
       <div style={{ marginTop: '1rem', textAlign: 'center' }}>
         {predLoading ? (
           <p style={{ color: '#888' }}>Predicting trend…</p>

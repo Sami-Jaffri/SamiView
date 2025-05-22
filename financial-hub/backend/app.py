@@ -27,7 +27,7 @@ def get_candle(symbol):
         logger.debug(f"Fetching data for symbol: {symbol}")
         df = yf.download(
             symbol,
-            period="1mo",
+            period="max",
             interval="1d",
             progress=False,
             auto_adjust=True
@@ -40,9 +40,32 @@ def get_candle(symbol):
 
         df = df.ffill()
         timestamps = [int(ts.timestamp()) for ts in df.index]
-        closes = [x[0] for x in df["Close"].values.tolist()]
 
-        return jsonify({"t": timestamps, "c": closes})
+        def get_col(df, col):
+            if col in df.columns:
+                return df[col].values.tolist()  
+            for c in df.columns:
+                if isinstance(c, tuple) and c[0] == col:
+                    return df[c].values.tolist()
+            raise KeyError(f"Column {col} not found in DataFrame")
+
+
+        opens = get_col(df, "Open")
+        highs = get_col(df, "High")
+        lows = get_col(df, "Low")
+        closes = get_col(df, "Close")
+
+        # Check for missing/empty arrays
+        if not (timestamps and opens and highs and lows and closes):
+            return jsonify({"error": "Missing or empty OHLC data"}), 400
+
+        return jsonify({
+            "t": timestamps,
+            "o": opens,
+            "h": highs,
+            "l": lows,
+            "c": closes
+        })
 
     except Exception as e:
         logger.error(f"Error in get_candle for {symbol}: {e}", exc_info=True)
@@ -69,7 +92,6 @@ def get_news(symbol):
 @app.route("/api/predict/<symbol>")
 def predict_trend(symbol):
     try:
-        # 1) Download 1 year of data (adjusted)
         df = yf.download(
             symbol,
             period="1y",

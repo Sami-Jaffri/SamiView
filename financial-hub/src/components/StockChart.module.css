@@ -1,0 +1,22 @@
+.chart-container {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  height: 600px;
+  background: linear-gradient(135deg, #181818 60%, #23272f 100%);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 6px 32px 0 rgba(0,0,0,0.45), 0 1.5px 6px 0 rgba(38,166,154,0.08);
+  border: 2px solid #23272f;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+.chart-container:hover {
+  box-shadow: 0 10px 40px 0 rgba(38,166,154,0.18), 0 2px 8px 0 rgba(38,166,154,0.12);
+  border: 2px solid #26a69a;
+}
+
+.chart-outer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+} 

@@ -1,5 +1,5 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', 'Inter', 'system-ui', 'Segoe UI', 'Arial', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -65,4 +65,16 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Hide scrollbars for the whole app, but keep scrolling */
+body, html, #root {
+  scrollbar-width: none;         /* Firefox */
+  -ms-overflow-style: none;      /* IE and Edge */
+}
+
+body::-webkit-scrollbar,
+html::-webkit-scrollbar,
+#root::-webkit-scrollbar {
+  display: none;                 /* Chrome, Safari, Opera */
 }

@@ -12,7 +12,7 @@
 }
 .chart-container:hover {
   box-shadow: 0 10px 40px 0 rgba(38,166,154,0.18), 0 2px 8px 0 rgba(38,166,154,0.12);
-  border: 2px solid #26a69a;
+  border: 2px solid #ffffff;
 }
 
 .chart-outer {

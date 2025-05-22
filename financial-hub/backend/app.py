@@ -5,9 +5,10 @@ import pandas as pd
 from flask import Flask, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from sklearn.linear_model import LogisticRegression
 import logging
+from dateutil import parser
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -19,6 +20,8 @@ if not API_KEY:
 
 app = Flask(__name__)
 CORS(app)
+
+MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 
 
 @app.route("/api/candle/<symbol>")
@@ -74,19 +77,77 @@ def get_candle(symbol):
 
 @app.route("/api/news/<symbol>")
 def get_news(symbol):
-    today    = date.today()
-    week_ago = today - timedelta(days=7)
-    resp = requests.get(
-        "https://finnhub.io/api/v1/company-news",
-        params={
-            "symbol": symbol,
-            "from": week_ago.isoformat(),
-            "to": today.isoformat(),
-            "token": API_KEY
-        }
-    )
-    articles = resp.json()
-    return jsonify(articles[:5] if isinstance(articles, list) else [])
+    # --- Marketaux ---
+    marketaux_url = "https://api.marketaux.com/v1/news/all"
+    marketaux_params = {
+        "symbols": symbol,
+        "filter_entities": "true",
+        "language": "en",
+        "api_token": MARKETAUX_API_KEY,
+        "limit": 10
+    }
+    marketaux_resp = requests.get(marketaux_url, params=marketaux_params)
+    marketaux_data = marketaux_resp.json()
+    marketaux_articles = []
+    for item in marketaux_data.get("data", []):
+        source = item.get("source")
+        if isinstance(source, dict):
+            source_name = source.get("name")
+        else:
+            source_name = source
+        published_at = item.get("published_at")
+        if published_at:
+            try:
+                dt = parser.parse(published_at)
+                published_at_fmt = dt.strftime("%Y-%m-%dT%H:%M:%S")
+            except Exception:
+                published_at_fmt = ""
+        else:
+            published_at_fmt = ""
+        marketaux_articles.append({
+            "title": item.get("title") or "No Title",
+            "published_at": published_at_fmt,
+            "source": source_name or "",
+            "url": item.get("url") or "",
+            "description": item.get("description") or "",
+        })
+
+    # --- Finnhub ---
+    finnhub_url = "https://finnhub.io/api/v1/company-news"
+    finnhub_params = {
+        "symbol": symbol,
+        "from": (date.today() - timedelta(days=7)).isoformat(),
+        "to": date.today().isoformat(),
+        "token": API_KEY
+    }
+    finnhub_resp = requests.get(finnhub_url, params=finnhub_params)
+    finnhub_data = finnhub_resp.json()
+    finnhub_articles = []
+    for item in finnhub_data if isinstance(finnhub_data, list) else []:
+        published_at = item.get("datetime")
+        if published_at:
+            try:
+                # Finnhub datetime is usually a unix timestamp
+                dt = datetime.fromtimestamp(published_at) if isinstance(published_at, (int, float)) else parser.parse(str(published_at))
+                published_at_fmt = dt.strftime("%Y-%m-%dT%H:%M:%S")
+            except Exception:
+                published_at_fmt = ""
+        else:
+            published_at_fmt = ""
+        finnhub_articles.append({
+            "title": item.get("headline") or "No Title",
+            "published_at": published_at_fmt,
+            "source": item.get("source") or "",
+            "url": item.get("url") or "",
+            "description": item.get("summary") or "",
+        })
+
+    # --- Combine, sort, and return ---
+    all_articles = marketaux_articles + finnhub_articles
+    # Remove articles with no date, then sort by date descending
+    all_articles = [a for a in all_articles if a["published_at"]]
+    all_articles.sort(key=lambda x: x["published_at"], reverse=True)
+    return jsonify(all_articles[:15])  # Return top 15 most recent
 
 
 @app.route("/api/predict/<symbol>")

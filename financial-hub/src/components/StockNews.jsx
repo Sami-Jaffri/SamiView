@@ -15,8 +15,6 @@ export default function StockNews({ symbol }) {
       .finally(() => setLoading(false));
   }, [symbol]);
 
-  const fmt = ts => new Date(ts * 1000).toLocaleString();
-
   if (loading) return <p style={{ color: '#888' }}>Loading...</p>;
   if (error)   return <p style={{ color: '#e11d48' }}>{error}</p>;
   if (articles.length === 0) return <p style={{ color: '#888' }}>No recent news.</p>;
@@ -30,33 +28,40 @@ export default function StockNews({ symbol }) {
           borderRadius: '4px',
           boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
         }}>
-          <a
-            href={a.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontSize: '0.95rem',
-              fontWeight: '600',
-              color: '#3b82f6',
-              textDecoration: 'none'
-            }}
-          >
-            {a.headline}
-          </a>
+          <div>
+            {a.url ? (
+              <a
+                href={a.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  color: '#3b82f6',
+                  textDecoration: 'none'
+                }}
+              >
+                {a.title || 'No Title'}
+              </a>
+            ) : (
+              <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>{a.title || 'No Title'}</span>
+            )}
+          </div>
           <p style={{
             margin: '0.25rem 0',
             fontSize: '0.75rem',
             color: '#aaa'
           }}>
-            {fmt(a.datetime)} — {a.source}
+            {a.published_at && <span>{a.published_at}</span>}
+            {a.source && <span> — {a.source}</span>}
           </p>
-          {a.summary && (
+          {a.description && (
             <p style={{
               margin: 0,
               fontSize: '0.85rem',
               color: '#e1e1e1'
             }}>
-              {a.summary}
+              {a.description}
             </p>
           )}
         </div>
